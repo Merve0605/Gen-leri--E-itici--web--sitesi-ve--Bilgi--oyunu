@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Chosen Palette: Futuristic Neon -->
+    <!-- Application Structure Plan: The application uses a linear, multi-screen flow contained within a single page, hiding and showing sections with JavaScript. The structure is: 1. Age Verification Gate, 2. Interactive Quiz Screen, 3. Interim/Final Results Screen. This task-oriented flow was chosen as the most intuitive structure for a game, guiding the user sequentially from login, through gameplay, to results without distractions. Navigation is handled by explicit action buttons ('Giriş Yap', 'Devam Et', 'Tekrar Oyna') that control the visibility of these sections. -->
+    <!-- Visualization & Content Choices: The application visualizes information using dynamically updated HTML elements instead of complex charts, prioritizing clarity and directness for the game format. Key choices include: [Report Info: Age Verification -> Goal: Restrict Access -> Viz/Method: HTML Input Field -> Interaction: JS validation on click/Enter -> Justification: Standard and universally understood method.], [Report Info: Quiz Questions/Answers -> Goal: Test Knowledge -> Viz/Method: Dynamic Text Blocks & Input -> Interaction: User types answer, JS evaluates and provides immediate visual feedback (color change, text animation) -> Justification: Provides an engaging, interactive loop essential for a quiz.], [Report Info: User Performance -> Goal: Summarize Score -> Viz/Method: Simple HTML text for Correct, Incorrect, and Total Score -> Interaction: Screen appears automatically at intervals and at the end -> Justification: For three simple stats, direct text is clearer and faster to parse than a chart. Library/Method: Vanilla JS & Tailwind CSS for all elements.] -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <title>Gençleri Eğitici Web Sitesi - Bilgi Oyunu</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💡</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #1e1e2d;
+            color: #d1d5db;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg, 
+                rgba(255, 255, 255, 0.03) 1px, 
+                transparent 1px
+            ), linear-gradient(
+                rgba(255, 255, 255, 0.03) 1px, 
+                transparent 1px
+            );
+            background-size: 20px 20px;
+            z-index: -1;
+            opacity: 0.8;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background-color: rgba(30, 30, 45, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            border: 2px solid #6366f1;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container.denied {
+            background-color: rgba(185, 28, 28, 0.7);
+            border-color: #ef4444;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+            animation: glow-red 1s infinite alternate;
+        }
+        @keyframes glow-red {
+            from {
+                box-shadow: 0 0 10px #ef4444;
+            }
+            to {
+                box-shadow: 0 0 25px #ef4444, 0 0 50px #ef4444;
+            }
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #d1d5db;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 5px #d1d5db;
+        }
+        p {
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            background-color: #2e2e42;
+            border: 2px solid #4a5568;
+            border-radius: 0.75rem;
+            color: #d1d5db;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 10px #6366f1;
+        }
+        button {
+            width: 100%;
+            padding: 0.9rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        #verify-button, #check-button, #continue-button {
+            background-color: #6366f1;
+        }
+        #verify-button:hover, #check-button:hover, #continue-button:hover {
+            background-color: #4f46e5;
+            box-shadow: 0 0 15px #6366f1;
+        }
+        #exit-button, #play-again-button, #try-again-button {
+            background-color: #ec4899;
+        }
+        #exit-button:hover, #play-again-button:hover, #try-again-button:hover {
+            background-color: #db2777;
+            box-shadow: 0 0 15px #ec4899;
+        }
+        #skip-button {
+            background-color: #fcd34d;
+            color: #1a202c;
+        }
+        #skip-button:hover {
+            background-color: #facc15;
+            box-shadow: 0 0 15px #fcd34d;
+        }
+        .message {
+            margin-top: 1.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+        .message.error {
+            background-color: #ef4444;
+            color: #ffffff;
+            box-shadow: 0 0 15px #ef4444;
+        }
+        #question-box {
+            background-color: #2e2e42;
+            border: 2px solid #6366f1;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+        #hint-text {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        #feedback-message {
+            margin-bottom: 1.5rem;
+            min-height: 40px;
+            font-weight: 600;
+        }
+        #feedback-message.correct {
+            color: #10b981;
+            animation: bounce-text 0.5s ease-in-out;
+        }
+        #feedback-message.incorrect {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        @keyframes bounce-text {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+        #results-container p {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+        #results-container span {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fcd34d;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="age-verification-container" class="container">
+        <h1>Gençleri Eğitici Web Sitesine Hoş Geldiniz</h1>
+        <p>Lütfen devam etmek için yaşınızı girin.</p>
+        <div class="input-group">
+            <input type="number" id="ageInput" placeholder="Yaşınız" min="1" max="120" />
+        </div>
+        <button id="verify-button">Giriş Yap</button>
+        <button id="try-again-button" style="display: none;">Tekrar Dene</button>
+        <div id="message" class="message"></div>
+    </div>
+
+    <div id="game-container" class="container" style="display: none;">
+        <h1>Eğlenerek Öğren</h1>
+        <div id="question-box">
+            <div id="question-text"></div>
+            <div id="hint-text"></div>
+        </div>
+        <div class="input-group">
+            <input type="text" id="answer-input" placeholder="Cevabını buraya yaz" />
+        </div>
+        <div id="feedback-message"></div>
+        <button id="check-button">Kontrol Et</button>
+        <button id="skip-button">Soruyu Geç</button>
+        <button id="exit-button">Çıkış Yap</button>
+    </div>
+
+    <div id="results-container" class="container" style="display: none;">
+        <h1 id="results-title">Oyun Bitti!</h1>
+        <p id="results-description">İşte sonuçlarınız:</p>
+        <div>
+            <p>Doğru Cevap: <span id="correct-count">0</span></p>
+            <p>Yanlış Cevap: <span id="incorrect-count">0</span></p>
+            <p>Toplam Puanınız: <span id="total-score">0</span></p>
+        </div>
+        <button id="play-again-button" class="mt-6">Tekrar Oyna</button>
+        <button id="continue-button" class="mt-6" style="display: none;">Devam Et</button>
+    </div>
+
+
+    <script>
+        const ageVerificationContainer = document.getElementById('age-verification-container');
+        const gameContainer = document.getElementById('game-container');
+        const resultsContainer = document.getElementById('results-container');
+        const ageInput = document.getElementById('ageInput');
+        const verifyButton = document.getElementById('verify-button');
+        const tryAgainButton = document.getElementById('try-again-button');
+        const messageDiv = document.getElementById('message');
+        const questionText = document.getElementById('question-text');
+        const hintText = document.getElementById('hint-text');
+        const answerInput = document.getElementById('answer-input');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const checkButton = document.getElementById('check-button');
+        const skipButton = document.getElementById('skip-button');
+        const exitButton = document.getElementById('exit-button');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsDescription = document.getElementById('results-description');
+        const correctCountSpan = document.getElementById('correct-count');
+        const incorrectCountSpan = document.getElementById('incorrect-count');
+        const totalScoreSpan = document.getElementById('total-score');
+        const playAgainButton = document.getElementById('play-again-button');
+        const continueButton = document.getElementById('continue-button');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+
+        const questions = [
+            { type: "bilmece", question: "Yemek yerken doymaz, su içerken kanmaz. Ne?", answer: "ateş", hint: "Isıyı ve ışığı yayar." },
+            { type: "bilmece", question: "Hangi kuş uçar ama konmaz?", answer: "zaman", hint: "Saniyeler, dakikalar, saatler..." },
+            { type: "ingilizce", question: "İngilizce'de 'cat' ne demektir?", answer: "kedi", hint: "Miyavlayan bir hayvandır." },
+            { type: "ingilizce", question: "İngilizce'de 'red' ne demektir?", answer: "kırmızı", hint: "Çoğu trafik lambası bu renktedir." },
+            { type: "bulmaca", question: "Bir babanın 4 oğlu var. Her oğlunun bir de kız kardeşi var. Ailenin toplam kaç çocuğu vardır?", answer: "5", hint: "Tüm oğulların kız kardeşi aynı kişidir." },
+            { type: "bulmaca", question: "Bir elmanın yarısı neye benzer?", answer: "diğer yarısına", hint: "Bu bir kelime oyunudur." },
+            { type: "müzik", question: "Müzikte sesin kalınlığını veya inceliğini belirten kavrama ne denir?", answer: "nota", hint: "Müzikteki sesin yazılı halidir." },
+            { type: "spor", question: "Futbol, basketbol ve voleybol gibi sporların amacı genellikle nedir?", answer: "gol atmak", hint: "Bu sporlarda sayı kazanmak için topun girdiği yer." },
+            { type: "dini", question: "İslam dininin kutsal kitabı nedir?", answer: "kur'an", hint: "Tüm Müslümanlar için rehberdir." },
+            { type: "almanca", question: "Almanca'da 'Teşekkür ederim' ne demektir?", answer: "danke", hint: "Bu kelime 'danke' diye başlar." }
+        ];
+
+        function shuffleQuestions(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function displayQuestion() {
+            feedbackMessage.classList.remove('correct', 'incorrect');
+            const question = questions[currentQuestionIndex];
+            questionText.textContent = question.question;
+            hintText.textContent = `İpucu: ${question.hint}`;
+            answerInput.value = '';
+            feedbackMessage.textContent = '';
+            checkButton.style.display = 'block';
+            skipButton.style.display = 'block';
+            answerInput.disabled = false;
+            answerInput.focus();
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim().toLowerCase();
+            const correctAnswer = questions[currentQuestionIndex].answer.toLowerCase();
+
+            answerInput.disabled = true;
+            checkButton.style.display = 'none';
+            skipButton.style.display = 'none';
+
+            if (userAnswer === correctAnswer) {
+                feedbackMessage.textContent = 'Doğru! Çok iyi!';
+                feedbackMessage.classList.add('correct');
+                score += 10;
+                correctAnswers++;
+                setTimeout(nextQuestion, 1000);
+            } else {
+                feedbackMessage.textContent = `Yanlış cevap. Doğru cevap: ${correctAnswer.toUpperCase()}`;
+                feedbackMessage.classList.add('incorrect');
+                incorrectAnswers++;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+
+        function skipQuestion() {
+            incorrectAnswers++;
+            checkButton.style.display = 'none';
+            skipButton.style.display = 'none';
+            nextQuestion();
+        }
+        
+        function showFinalResults() {
+            gameContainer.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            resultsTitle.textContent = "Oyun Bitti!";
+            resultsDescription.textContent = "İşte sonuçlarınız:";
+            correctCountSpan.textContent = correctAnswers;
+            incorrectCountSpan.textContent = incorrectAnswers;
+            totalScoreSpan.textContent = score;
+            playAgainButton.style.display = 'block';
+            continueButton.style.display = 'none';
+        }
+
+        function showInterimResults() {
+            gameContainer.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            resultsTitle.textContent = "Güncel Skorunuz";
+            resultsDescription.textContent = "Oyun sırasında skorunuzu kontrol edin. Hadi devam edelim!";
+            correctCountSpan.textContent = correctAnswers;
+            incorrectCountSpan.textContent = incorrectAnswers;
+            totalScoreSpan.textContent = score;
+            playAgainButton.style.display = 'none';
+            continueButton.style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex >= questions.length) {
+                showFinalResults();
+            } else if (currentQuestionIndex > 0 && currentQuestionIndex % 5 === 0) {
+                showInterimResults();
+            } else {
+                displayQuestion();
+            }
+        }
+        
+        function continueGame() {
+            resultsContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            displayQuestion();
+        }
+
+        function goToAgeVerification() {
+            ageVerificationContainer.style.display = 'block';
+            gameContainer.style.display = 'none';
+            resultsContainer.style.display = 'none';
+            ageInput.value = '';
+            messageDiv.textContent = '';
+            messageDiv.style.display = 'none';
+            ageVerificationContainer.classList.remove('denied');
+            verifyButton.style.display = 'block';
+            ageInput.disabled = false;
+            tryAgainButton.style.display = 'none';
+            currentQuestionIndex = 0;
+            score = 0;
+            correctAnswers = 0;
+            incorrectAnswers = 0;
+            shuffleQuestions(questions);
+        }
+        
+        function handleVerify() {
+             const age = parseInt(ageInput.value);
+            if (age >= 18) {
+                ageVerificationContainer.style.display = 'none';
+                gameContainer.style.display = 'block';
+                displayQuestion();
+            } else {
+                messageDiv.textContent = 'Uygunsuz yaş girişi! Lütfen bir yetişkinin yardımını isteyin.';
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+                ageVerificationContainer.classList.add('denied');
+                verifyButton.style.display = 'none';
+                ageInput.disabled = true;
+                tryAgainButton.style.display = 'block';
+            }
+        }
+
+        verifyButton.addEventListener('click', handleVerify);
+
+        ageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && verifyButton.style.display !== 'none') {
+                handleVerify();
+            }
+        });
+
+        tryAgainButton.addEventListener('click', function() {
+            ageInput.value = '';
+            messageDiv.textContent = '';
+            messageDiv.style.display = 'none';
+            ageVerificationContainer.classList.remove('denied');
+            verifyButton.style.display = 'block';
+            ageInput.disabled = false;
+            tryAgainButton.style.display = 'none';
+            ageInput.focus();
+        });
+
+        checkButton.addEventListener('click', checkAnswer);
+        skipButton.addEventListener('click', skipQuestion);
+        
+        answerInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && checkButton.style.display !== 'none') {
+                checkAnswer();
+            }
+        });
+
+        exitButton.addEventListener('click', goToAgeVerification);
+        playAgainButton.addEventListener('click', goToAgeVerification);
+        continueButton.addEventListener('click', continueGame);
+
+        window.onload = function() {
+            shuffleQuestions(questions);
+        };
+    </script>
+</body>
+</html>
